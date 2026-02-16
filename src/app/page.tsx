@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import styles from "./page.module.css";
 
 // UBAH BAGIAN INI:
-// Gunakan dynamic import dengan ssr: false
+// Gunakan dynamic import dengan ssr: false test
 const TelegramForm = dynamic(() => import('@/components/TelegramForm'), {
   ssr: false, // Ini kuncinya: Mematikan Server-Side Rendering untuk komponen ini
   loading: () => <p>Loading Form...</p> // (Opsional) Tampilan saat loading
