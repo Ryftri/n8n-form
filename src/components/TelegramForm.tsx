@@ -51,9 +51,12 @@ export default function TelegramForm() {
     } else {
       WebApp.MainButton.hideProgress();
       setIsLoading(false);
+      
+      // PERBAIKAN DI SINI:
+      // Tambahkan backtick ` ` di sekelilingnya
       WebApp.showPopup({
         title: 'Gagal',
-        message: result.message || 'Terjadi kesalahan saat menghubungi n8n.',
+        message: `${result.message || 'Terjadi kesalahan saat menghubungi n8n.'}`, 
       });
     }
   }, [item, category, qty, price]);
