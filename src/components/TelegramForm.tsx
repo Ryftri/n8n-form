@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import WebApp from '@twa-dev/sdk';
+import { useState, useCallback } from 'react';
+// import WebApp from '@twa-dev/sdk'; // KITA MATIKAN SEMENTARA BIAR TIDAK ERROR DI BROWSER
 import { submitExpense } from '@/app/actions';
 
 export default function TelegramForm() {
@@ -11,23 +11,20 @@ export default function TelegramForm() {
   const [qty, setQty] = useState('');
   const [price, setPrice] = useState('');
   
-  // State untuk loading (spinner)
+  // State untuk loading
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fungsi yang akan dipanggil saat tombol MainButton diklik
-  const handleMainButtonClick = useCallback(async () => {
+  // Fungsi submit manual (pengganti handleMainButtonClick)
+  const handleManualSubmit = useCallback(async () => {
     // 1. Validasi
     if (!item || !price) {
-      WebApp.showPopup({
-        title: 'Error',
-        message: 'Mohon lengkapi Nama Barang dan Harga!',
-      });
+      // Ganti WebApp.showPopup dengan alert biasa
+      alert('Error: Mohon lengkapi Nama Barang dan Harga!');
       return;
     }
 
     // 2. UI Loading
     setIsLoading(true);
-    WebApp.MainButton.showProgress();
 
     // 3. Siapkan data form
     const formData = {
@@ -38,52 +35,51 @@ export default function TelegramForm() {
       price
     };
 
-    // Ambil data user dari Telegram (Unsafe data cukup untuk konteks logging pengeluaran)
-    const telegramUser = WebApp.initDataUnsafe?.user;
+    // MOCK DATA USER (Palsu)
+    // Karena di browser kita tidak login Telegram, kita buat data palsu
+    const telegramUser = {
+        id: 999999,
+        first_name: "Debug User",
+        username: "debug_browser",
+        is_bot: false
+    };
 
     // 4. Panggil Server Action
     const result = await submitExpense(formData, telegramUser);
 
     // 5. Handle Response
     if (result.success) {
-      WebApp.MainButton.hideProgress();
-      WebApp.close(); // Tutup aplikasi jika sukses
+      alert("SUKSES! Laporan berhasil dikirim ke n8n.");
+      // Reset form biar enak
+      setItem('');
+      setQty('');
+      setPrice('');
     } else {
-      WebApp.MainButton.hideProgress();
-      setIsLoading(false);
-      WebApp.showPopup({
-        title: 'Gagal',
-        message: result.message || 'Terjadi kesalahan saat menghubungi n8n.',
-      });
+      alert(`GAGAL: ${result.message || 'Terjadi kesalahan server.'}`);
     }
+    
+    setIsLoading(false);
   }, [item, category, qty, price]);
 
-  // Efek untuk Inisialisasi Telegram SDK
+  // Efek Telegram DITUTUP SEMENTARA
+  /*
   useEffect(() => {
-    // Cek apakah kode dijalankan di client dan di dalam Telegram
     if (typeof window !== 'undefined') {
-      
-      // Expand agar full screen
       WebApp.expand();
-
-      // Setup Tombol Utama (Native Telegram Button)
       WebApp.MainButton.setText("KIRIM LAPORAN");
-      WebApp.MainButton.show(); // INI KUNCINYA: Hanya muncul di Telegram App
-
-      // Pasang Event Listener
+      WebApp.MainButton.show();
       WebApp.MainButton.onClick(handleMainButtonClick);
-
-      // Cleanup saat component di-unmount (penting di React!)
       return () => {
         WebApp.MainButton.offClick(handleMainButtonClick);
       };
     }
   }, [handleMainButtonClick]);
+  */
 
   return (
-    <div className="flex flex-col gap-4 w-full max-w-md">
+    <div className="flex flex-col gap-4 w-full max-w-md p-4 bg-white dark:bg-black">
       {/* Title */}
-      <h3 className="text-xl font-bold mb-2">Catat Pengeluaran 📝</h3>
+      <h3 className="text-xl font-bold mb-2 text-center">Mode Debug Browser 🛠️</h3>
 
       {/* Input Nama Barang */}
       <div className="flex flex-col gap-1">
@@ -93,7 +89,7 @@ export default function TelegramForm() {
           value={item}
           onChange={(e) => setItem(e.target.value)}
           placeholder="Contoh: Semen"
-          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black dark:bg-gray-800 dark:text-white dark:border-gray-600"
+          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black"
         />
       </div>
 
@@ -103,7 +99,7 @@ export default function TelegramForm() {
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black dark:bg-gray-800 dark:text-white dark:border-gray-600"
+          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black"
         >
           <option value="Material">Material</option>
           <option value="Upah">Upah</option>
@@ -120,7 +116,7 @@ export default function TelegramForm() {
           value={qty}
           onChange={(e) => setQty(e.target.value)}
           placeholder="0"
-          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black dark:bg-gray-800 dark:text-white dark:border-gray-600"
+          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black"
         />
       </div>
 
@@ -132,20 +128,19 @@ export default function TelegramForm() {
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           placeholder="Rp 0"
-          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black dark:bg-gray-800 dark:text-white dark:border-gray-600"
+          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black"
         />
       </div>
 
-      {/* Loader Manual (Opsional, karena Telegram punya MainButton.showProgress) */}
-      {isLoading && (
-        <div className="flex justify-center mt-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      )}
+      {/* TOMBOL HTML BIASA (PENGGANTI TOMBOL TELEGRAM) */}
+      <button
+        onClick={handleManualSubmit}
+        disabled={isLoading}
+        className="w-full mt-4 p-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+      >
+        {isLoading ? 'Sedang Mengirim...' : 'KIRIM LAPORAN (TEST)'}
+      </button>
       
-      {/* NOTE: Tidak ada tombol <button>Submit</button> HTML di sini.
-         Tombolnya dikendalikan oleh WebApp.MainButton dari SDK.
-      */}
     </div>
   );
 }
