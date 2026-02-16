@@ -49,6 +49,6 @@ export async function submitExpense(formData: any, telegramUser: any) {
     return { success: true };
   } catch (error) {
     console.error("Server Action Error:", error);
-    return { success: false, message: "Terjadi kesalahan server" };
+    return { success: false, message: error };
   }
 }
