@@ -5,148 +5,156 @@ import WebApp from '@twa-dev/sdk';
 import { submitExpense } from '@/app/actions';
 
 export default function TelegramForm() {
-  // State untuk form input
   const [item, setItem] = useState('');
   const [category, setCategory] = useState('Material');
   const [qty, setQty] = useState('');
   const [price, setPrice] = useState('');
-  
-  // State untuk loading (spinner)
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fungsi yang akan dipanggil saat tombol MainButton diklik
+  // Logic cek apakah kategori 'Upah' dipilih
+  const isUpah = category === 'Upah';
+
   const handleMainButtonClick = useCallback(async () => {
-    // 1. Validasi
-    if (!item || !price) {
+    // 1. Validasi Dinamis
+    // Jika BUKAN upah, butuh item & price. Jika Upah, cukup item (dan qty opsional)
+    const isValid = isUpah ? !!item : (item && price);
+
+    if (!isValid) {
       WebApp.showPopup({
-        title: 'Error',
-        message: 'Mohon lengkapi Nama Barang dan Harga!',
+        title: '⚠️ Data Kurang',
+        message: isUpah ? 'Mohon isi detail keterangan!' : 'Mohon isi Nama Barang dan Harga!',
       });
       return;
     }
 
-    // 2. UI Loading
     setIsLoading(true);
     WebApp.MainButton.showProgress();
 
-    // 3. Siapkan data form
     const formData = {
       action: "lapor_pengeluaran",
       item,
       category,
       qty,
-      price
+      price: isUpah ? '0' : price // Kirim 0 atau kosong jika Upah (karena field di-hide)
     };
 
-    // Ambil data user dari Telegram (Unsafe data cukup untuk konteks logging pengeluaran)
     const telegramUser = WebApp.initDataUnsafe?.user;
-
-    // 4. Panggil Server Action
     const result = await submitExpense(formData, telegramUser);
 
-    // 5. Handle Response
     if (result.success) {
       WebApp.MainButton.hideProgress();
-      WebApp.close(); // Tutup aplikasi jika sukses
+      WebApp.close();
     } else {
       WebApp.MainButton.hideProgress();
       setIsLoading(false);
-      console.log(result.message)
       WebApp.showPopup({
         title: 'Gagal',
-        message: 'Terjadi kesalahan saat menghubungi n8n.',
+        message: 'Koneksi bermasalah.',
       });
     }
-  }, [item, category, qty, price]);
+  }, [item, category, qty, price, isUpah]);
 
-  // Efek untuk Inisialisasi Telegram SDK
   useEffect(() => {
-    // Cek apakah kode dijalankan di client dan di dalam Telegram
     if (typeof window !== 'undefined') {
-      
-      // Expand agar full screen
       WebApp.expand();
-
-      // Setup Tombol Utama (Native Telegram Button)
       WebApp.MainButton.setText("KIRIM LAPORAN");
-      WebApp.MainButton.show(); // INI KUNCINYA: Hanya muncul di Telegram App
-
-      // Pasang Event Listener
+      WebApp.MainButton.show();
       WebApp.MainButton.onClick(handleMainButtonClick);
+      WebApp.setHeaderColor('secondary_bg_color');
 
-      // Cleanup saat component di-unmount (penting di React!)
       return () => {
         WebApp.MainButton.offClick(handleMainButtonClick);
       };
     }
   }, [handleMainButtonClick]);
 
+  const formatRupiah = (val: string) => {
+    if (!val) return '';
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(val));
+  };
+
   return (
-    <div className="flex flex-col gap-4 w-full max-w-md">
-      {/* Title */}
-      <h3 className="text-xl font-bold mb-2">Catat Pengeluaran 📝</h3>
-
-      {/* Input Nama Barang */}
-      <div className="flex flex-col gap-1">
-        <label className="font-bold text-sm">Nama Barang</label>
-        <input
-          type="text"
-          value={item}
-          onChange={(e) => setItem(e.target.value)}
-          placeholder="Contoh: Semen"
-          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black dark:bg-gray-800 dark:text-white dark:border-gray-600"
-        />
+    <div className="form-container">
+      <div className="form-header">
+        <h1 className="form-title">Catat Pengeluaran 📝</h1>
+        <p className="form-subtitle">Lapor data proyek harian</p>
       </div>
 
-      {/* Input Kategori */}
-      <div className="flex flex-col gap-1">
-        <label className="font-bold text-sm">Kategori</label>
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black dark:bg-gray-800 dark:text-white dark:border-gray-600"
-        >
-          <option value="Material">Material</option>
-          <option value="Upah">Upah</option>
-          <option value="Alat">Alat</option>
-          <option value="Konsumsi">Konsumsi</option>
-        </select>
+      <div className="form-body">
+        
+        {/* Item Name */}
+        <div className="input-group">
+          <label className="input-label">
+            {isUpah ? 'Keterangan Tukang' : 'Nama Barang / Jasa'}
+          </label>
+          <input
+            type="text"
+            className="input-field"
+            placeholder={isUpah ? "Contoh: Pak Budi & Tim" : "Contoh: Semen Gresik"}
+            value={item}
+            onChange={(e) => setItem(e.target.value)}
+          />
+        </div>
+
+        {/* Category - UPDATED OPTIONS */}
+        <div className="input-group">
+          <label className="input-label">Kategori</label>
+          <div className="select-wrapper">
+            <select
+              className="select-field"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="Material">🧱 Material</option>
+              <option value="Konsumsi">☕ Konsumsi</option>
+              <option value="Upah">👷 Upah Tukang</option>
+            </select>
+          </div>
+        </div>
+
+        {/* LOGIC LAYOUT:
+           Jika 'isUpah' true -> Hapus class 'form-row' agar input Jumlah jadi full width.
+           Jika false -> Pakai 'form-row' agar Jumlah & Harga berdampingan.
+        */}
+        <div className={isUpah ? "" : "form-row"}>
+          
+          {/* Input Jumlah */}
+          <div className="input-group">
+            <label className="input-label">
+              {isUpah ? 'Jumlah' : 'Jumlah (Qty)'}
+            </label>
+            <input
+              type="number"
+              className="input-field"
+              placeholder="0"
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+            />
+          </div>
+
+          {/* Input Harga (Hanya muncul jika BUKAN Upah) */}
+          {!isUpah && (
+            <div className="input-group">
+              <label className="input-label">Total Harga</label>
+              <input
+                type="number"
+                className="input-field"
+                placeholder="Rp"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+              {price && <span className="helper-text">{formatRupiah(price)}</span>}
+            </div>
+          )}
+        </div>
+
       </div>
 
-      {/* Input Jumlah */}
-      <div className="flex flex-col gap-1">
-        <label className="font-bold text-sm">Jumlah</label>
-        <input
-          type="number"
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-          placeholder="0"
-          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black dark:bg-gray-800 dark:text-white dark:border-gray-600"
-        />
-      </div>
-
-      {/* Input Harga */}
-      <div className="flex flex-col gap-1">
-        <label className="font-bold text-sm">Harga Total</label>
-        <input
-          type="number"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          placeholder="Rp 0"
-          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black dark:bg-gray-800 dark:text-white dark:border-gray-600"
-        />
-      </div>
-
-      {/* Loader Manual (Opsional, karena Telegram punya MainButton.showProgress) */}
       {isLoading && (
-        <div className="flex justify-center mt-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="loading-overlay">
+          <div className="spinner"></div>
         </div>
       )}
-      
-      {/* NOTE: Tidak ada tombol <button>Submit</button> HTML di sini.
-         Tombolnya dikendalikan oleh WebApp.MainButton dari SDK.
-      */}
     </div>
   );
 }
