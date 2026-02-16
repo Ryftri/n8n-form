@@ -12,7 +12,7 @@ export default function TelegramForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Logic cek apakah kategori 'Upah' dipilih
-  const isUpah = category === 'Upah';
+  const isUpah = category === 'Gaji Tukang';
 
   const handleMainButtonClick = useCallback(async () => {
     // 1. Validasi Dinamis
