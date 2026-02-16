@@ -107,7 +107,7 @@ export default function TelegramForm() {
             >
               <option value="Material">🧱 Material</option>
               <option value="Konsumsi">☕ Konsumsi</option>
-              <option value="Upah">👷 Upah Tukang</option>
+              <option value="Gaji Tukang">👷 Upah Tukang</option>
             </select>
           </div>
         </div>
