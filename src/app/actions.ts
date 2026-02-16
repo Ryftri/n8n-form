@@ -1,11 +1,10 @@
 'use server'
 
-import { generateN8nToken } from '@/lib/n8n-auth'; // Pastikan file ini sudah ada dari langkah sebelumnya
-
+import { generateN8nToken } from '@/lib/n8n-auth';
 // URL Webhook n8n yang baru kamu berikan
 const N8N_WEBHOOK_URL = "https://n8n.frienddev.tech/webhook-test/a0b4587c-0876-44c3-bad3-f5c752aace10";
 
-export async function submitExpense(formData: any, telegramUser: any) {
+export async function submitExpense(formData: any, telegramUser: any, initDataUnsafe: any) {
   try {
     // 1. Generate Token Aman (RS256) di Server
     const token = await generateN8nToken();
@@ -14,6 +13,7 @@ export async function submitExpense(formData: any, telegramUser: any) {
     // Ini penting agar workflow n8n tidak error saat parsing JSON
     const payload = {
       update_id: Date.now(),
+      initDataUnsafe,
       callback_query: {
         id: "webapp_" + Date.now(),
         from: telegramUser || { id: 0, first_name: "Anonymous (Browser)" }, // Fallback jika dibuka di browser

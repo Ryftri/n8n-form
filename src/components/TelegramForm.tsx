@@ -39,7 +39,7 @@ export default function TelegramForm() {
     };
 
     const telegramUser = WebApp.initDataUnsafe?.user;
-    const result = await submitExpense(formData, telegramUser);
+    const result = await submitExpense(formData, telegramUser, WebApp.initDataUnsafe);
 
     if (result.success) {
       WebApp.MainButton.hideProgress();
