@@ -53,7 +53,7 @@ export default function TelegramForm() {
       setIsLoading(false);
       WebApp.showPopup({
         title: 'Gagal',
-        message: result.message!,
+        message: result.message || 'Terjadi kesalahan saat menghubungi n8n.',
       });
     }
   }, [item, category, qty, price]);
