@@ -1,191 +1,146 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import Script from 'next/script';
+import { useState, useCallback } from 'react';
+// import WebApp from '@twa-dev/sdk'; // KITA MATIKAN SEMENTARA BIAR TIDAK ERROR DI BROWSER
 import { submitExpense } from '@/app/actions';
 
-// Definisi tipe window agar TS tidak error saat akses window.Telegram
-declare global {
-  interface Window {
-    Telegram: any;
-  }
-}
-
 export default function TelegramForm() {
-  const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  
-  // State Form
+  // State untuk form input
   const [item, setItem] = useState('');
   const [category, setCategory] = useState('Material');
   const [qty, setQty] = useState('');
   const [price, setPrice] = useState('');
+  
+  // State untuk loading
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Handle Submit ke Server Action
-  const handleSubmit = useCallback(async () => {
-    const tg = window.Telegram.WebApp;
-
+  // Fungsi submit manual (pengganti handleMainButtonClick)
+  const handleManualSubmit = useCallback(async () => {
     // 1. Validasi
     if (!item || !price) {
-      tg.showPopup({ title: "Error", message: "Mohon lengkapi Nama Barang dan Harga!" });
+      // Ganti WebApp.showPopup dengan alert biasa
+      alert('Error: Mohon lengkapi Nama Barang dan Harga!');
       return;
     }
 
     // 2. UI Loading
-    setLoading(true);
-    tg.MainButton.showProgress();
+    setIsLoading(true);
 
-    // 3. Ambil data user dari Telegram
-    const user = tg.initDataUnsafe?.user;
-    
-    // Data form
+    // 3. Siapkan data form
     const formData = {
-        item,
-        category,
-        qty,
-        price
+      action: "lapor_pengeluaran",
+      item,
+      category,
+      qty,
+      price
     };
 
-    // 4. Panggil Server Action (Authentication terjadi di sini)
-    const result = await submitExpense(formData, user);
+    // MOCK DATA USER (Palsu)
+    // Karena di browser kita tidak login Telegram, kita buat data palsu
+    const telegramUser = {
+        id: 999999,
+        first_name: "Debug User",
+        username: "debug_browser",
+        is_bot: false
+    };
+
+    // 4. Panggil Server Action
+    const result = await submitExpense(formData, telegramUser);
 
     // 5. Handle Response
-    setLoading(false);
-    tg.MainButton.hideProgress();
-
     if (result.success) {
-        tg.close(); // Tutup Mini App jika sukses
+      alert("SUKSES! Laporan berhasil dikirim ke n8n.");
+      // Reset form biar enak
+      setItem('');
+      setQty('');
+      setPrice('');
     } else {
-        tg.showPopup({
-            title: "Gagal",
-            message: result.message || "Terjadi kesalahan saat menghubungi n8n."
-        });
-    }
-  }, [item, category, qty, price]);
-
-  // Efek saat Script Telegram dimuat
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.Telegram) {
-      const tg = window.Telegram.WebApp;
-      tg.expand();
-
-      // Setup Tombol Utama
-      tg.MainButton.setText("KIRIM LAPORAN");
-      tg.MainButton.show();
-      
-      // Bersihkan event listener lama sebelum pasang baru
-      tg.MainButton.offClick(handleSubmit);
-      tg.MainButton.onClick(handleSubmit);
-
-      setMounted(true);
+      alert(`GAGAL: ${result.message || 'Terjadi kesalahan server.'}`);
     }
     
-    // Cleanup
-    return () => {
-        if (typeof window !== 'undefined' && window.Telegram) {
-            window.Telegram.WebApp.MainButton.offClick(handleSubmit);
-        }
-    };
-  }, [handleSubmit]);
+    setIsLoading(false);
+  }, [item, category, qty, price]);
+
+  // Efek Telegram DITUTUP SEMENTARA
+  /*
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      WebApp.expand();
+      WebApp.MainButton.setText("KIRIM LAPORAN");
+      WebApp.MainButton.show();
+      WebApp.MainButton.onClick(handleMainButtonClick);
+      return () => {
+        WebApp.MainButton.offClick(handleMainButtonClick);
+      };
+    }
+  }, [handleMainButtonClick]);
+  */
 
   return (
-    <>
-      <Script 
-        src="https://telegram.org/js/telegram-web-app.js" 
-        strategy="beforeInteractive"
-      />
+    <div className="flex flex-col gap-4 w-full max-w-md p-4 bg-white dark:bg-black">
+      {/* Title */}
+      <h3 className="text-xl font-bold mb-2 text-center">Mode Debug Browser 🛠️</h3>
 
-      <div style={{
-        backgroundColor: 'var(--tg-theme-bg-color, #fff)',
-        color: 'var(--tg-theme-text-color, #000)',
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '15px',
-        minHeight: '100vh', // Agar full screen
-        fontFamily: 'sans-serif'
-      }}>
-        
-        <h3 style={{ margin: '10px 0' }}>Catat Pengeluaran 📝</h3>
-
-        {/* Form Inputs */}
-        <label style={labelStyle}>Nama Barang</label>
-        <input 
-          type="text" 
-          placeholder="Contoh: Semen"
+      {/* Input Nama Barang */}
+      <div className="flex flex-col gap-1">
+        <label className="font-bold text-sm">Nama Barang</label>
+        <input
+          type="text"
           value={item}
           onChange={(e) => setItem(e.target.value)}
-          style={inputStyle}
+          placeholder="Contoh: Semen"
+          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black"
         />
+      </div>
 
-        <label style={labelStyle}>Kategori</label>
-        <select 
+      {/* Input Kategori */}
+      <div className="flex flex-col gap-1">
+        <label className="font-bold text-sm">Kategori</label>
+        <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          style={inputStyle}
+          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black"
         >
           <option value="Material">Material</option>
           <option value="Upah">Upah</option>
           <option value="Alat">Alat</option>
           <option value="Konsumsi">Konsumsi</option>
         </select>
+      </div>
 
-        <label style={labelStyle}>Jumlah</label>
-        <input 
-          type="number" 
-          placeholder="0"
+      {/* Input Jumlah */}
+      <div className="flex flex-col gap-1">
+        <label className="font-bold text-sm">Jumlah</label>
+        <input
+          type="number"
           value={qty}
           onChange={(e) => setQty(e.target.value)}
-          style={inputStyle}
+          placeholder="0"
+          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black"
         />
+      </div>
 
-        <label style={labelStyle}>Harga Total</label>
-        <input 
-          type="number" 
-          placeholder="Rp 0"
+      {/* Input Harga */}
+      <div className="flex flex-col gap-1">
+        <label className="font-bold text-sm">Harga Total</label>
+        <input
+          type="number"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          style={inputStyle}
+          placeholder="Rp 0"
+          className="p-3 rounded-lg border border-gray-300 bg-gray-100 text-black"
         />
-
-        {/* Loader CSS Custom */}
-        {loading && (
-          <div className="loader"></div>
-        )}
-
-        <style jsx global>{`
-          .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 2s linear infinite;
-            margin: 0 auto;
-          }
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
       </div>
-    </>
+
+      {/* TOMBOL HTML BIASA (PENGGANTI TOMBOL TELEGRAM) */}
+      <button
+        onClick={handleManualSubmit}
+        disabled={isLoading}
+        className="w-full mt-4 p-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+      >
+        {isLoading ? 'Sedang Mengirim...' : 'KIRIM LAPORAN (TEST)'}
+      </button>
+      
+    </div>
   );
 }
-
-// Styling Objects (untuk kerapian)
-const inputStyle: React.CSSProperties = {
-  padding: '12px',
-  borderRadius: '8px',
-  border: '1px solid #ccc',
-  backgroundColor: 'var(--tg-theme-secondary-bg-color, #f0f0f0)',
-  color: 'var(--tg-theme-text-color, #000)',
-  fontSize: '16px'
-};
-
-const labelStyle: React.CSSProperties = {
-  fontWeight: 'bold',
-  fontSize: '14px',
-  marginBottom: '-10px',
-  marginTop: '5px'
-};
