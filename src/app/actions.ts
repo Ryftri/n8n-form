@@ -3,7 +3,7 @@
 import { generateN8nToken } from '@/lib/n8n-auth';
 
 // URL Webhook n8n Anda
-const N8N_WEBHOOK_URL = "https://n8n.frienddev.tech/webhook-test/a0b4587c-0876-44c3-bad3-f5c752aace10";
+const N8N_WEBHOOK_URL = "https://n8n.frienddev.tech/webhook/a0b4587c-0876-44c3-bad3-f5c752aace10";
 
 // Fungsi helper untuk format tanggal Indonesia
 function getFormattedDateWIB() {
