@@ -5,24 +5,22 @@ import WebApp from '@twa-dev/sdk';
 import { submitExpense } from '@/app/actions';
 
 export default function TelegramForm() {
-  const [item, setItem] = useState('');
-  const [category, setCategory] = useState('Material');
-  const [qty, setQty] = useState('');
-  const [price, setPrice] = useState('');
+  const [nama, setNama] = useState('');
+  const [kategori, setKategori] = useState('');
+  const [jumlah, setJumlah] = useState('');
+  const [keterangan, setKeterangan] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Logic cek apakah kategori 'Upah' dipilih
-  const isUpah = category === 'Gaji Tukang';
+  // Fungsi submit yang dipicu oleh onSubmit form
+  const handleSubmit = async (e?: React.FormEvent) => {
+    // Mencegah reload halaman
+    if (e) e.preventDefault();
 
-  const handleMainButtonClick = useCallback(async () => {
-    // 1. Validasi Dinamis
-    // Jika BUKAN upah, butuh item & price. Jika Upah, cukup item (dan qty opsional)
-    const isValid = isUpah ? !!item : (item && price);
-
-    if (!isValid) {
+    // Validasi: Nama, Kategori, dan Jumlah wajib diisi
+    if (!nama || !kategori || !jumlah) {
       WebApp.showPopup({
         title: '⚠️ Data Kurang',
-        message: isUpah ? 'Mohon isi detail keterangan!' : 'Mohon isi Nama Barang dan Harga!',
+        message: 'Mohon isi Nama, Kategori, dan Jumlah (Rp)!',
       });
       return;
     }
@@ -31,11 +29,10 @@ export default function TelegramForm() {
     WebApp.MainButton.showProgress();
 
     const formData = {
-      action: "lapor_pengeluaran",
-      item,
-      category,
-      qty,
-      price: isUpah ? '0' : price // Kirim 0 atau kosong jika Upah (karena field di-hide)
+      nama,
+      kategori,
+      jumlah,
+      keterangan: keterangan || "-"
     };
 
     const telegramUser = WebApp.initDataUnsafe?.user;
@@ -49,24 +46,27 @@ export default function TelegramForm() {
       setIsLoading(false);
       WebApp.showPopup({
         title: 'Gagal',
-        message: 'Koneksi bermasalah.',
+        message: 'Koneksi bermasalah atau terjadi error.',
       });
     }
-  }, [item, category, qty, price, isUpah]);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       WebApp.expand();
       WebApp.MainButton.setText("KIRIM LAPORAN");
       WebApp.MainButton.show();
-      WebApp.MainButton.onClick(handleMainButtonClick);
+      // Menghubungkan MainButton Telegram ke fungsi handleSubmit
+      const handleTelegramButtonClick = () => handleSubmit();
+      
+      WebApp.MainButton.onClick(handleTelegramButtonClick);
       WebApp.setHeaderColor('secondary_bg_color');
 
       return () => {
-        WebApp.MainButton.offClick(handleMainButtonClick);
+        WebApp.MainButton.offClick(handleTelegramButtonClick);
       };
     }
-  }, [handleMainButtonClick]);
+  }, [nama, kategori, jumlah, keterangan]); // Dependencies diperbarui agar data terbaru terbaca saat tombol diklik
 
   const formatRupiah = (val: string) => {
     if (!val) return '';
@@ -74,87 +74,82 @@ export default function TelegramForm() {
   };
 
   return (
-    <div className="form-container">
-      <div className="form-header">
-        <h1 className="form-title">Catat Pengeluaran 📝</h1>
-        <p className="form-subtitle">Lapor data proyek harian</p>
-      </div>
+    <form className="form-container" onSubmit={handleSubmit}>
+      <header className="form-header">
+        <h1 className="form-title">
+          <span className="title-gradient">Input Data Baru</span>
+          <span className="title-icon">📝</span>
+        </h1>
+        <p className="form-subtitle">Silakan lengkapi form di bawah</p>
+      </header>
 
-      <div className="form-body">
-        
-        {/* Item Name */}
+      <section className="form-body">
         <div className="input-group">
-          <label className="input-label">
-            {isUpah ? 'Keterangan Tukang' : 'Nama Barang / Jasa'}
-          </label>
+          <label htmlFor="nama" className="input-label">Nama</label>
           <input
+            id="nama"
+            name="nama"
             type="text"
             className="input-field"
-            placeholder={isUpah ? "Contoh: Pak Budi & Tim" : "Contoh: Semen Gresik"}
-            value={item}
-            onChange={(e) => setItem(e.target.value)}
+            placeholder="Masukkan Nama..."
+            required
+            value={nama}
+            onChange={(e) => setNama(e.target.value)}
           />
         </div>
 
-        {/* Category - UPDATED OPTIONS */}
         <div className="input-group">
-          <label className="input-label">Kategori</label>
-          <div className="select-wrapper">
-            <select
-              className="select-field"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="Material">🧱 Material</option>
-              <option value="Konsumsi">☕ Konsumsi</option>
-              <option value="Gaji Tukang">👷 Upah Tukang</option>
-            </select>
-          </div>
+          <label htmlFor="kategori" className="input-label">Kategori</label>
+          <input
+            id="kategori"
+            name="kategori"
+            type="text"
+            className="input-field"
+            placeholder="Contoh: Transport, Makan, dll"
+            required
+            value={kategori}
+            onChange={(e) => setKategori(e.target.value)}
+          />
         </div>
 
-        {/* LOGIC LAYOUT:
-           Jika 'isUpah' true -> Hapus class 'form-row' agar input Jumlah jadi full width.
-           Jika false -> Pakai 'form-row' agar Jumlah & Harga berdampingan.
-        */}
-        <div className={isUpah ? "" : "form-row"}>
-          
-          {/* Input Jumlah */}
-          <div className="input-group">
-            <label className="input-label">
-              {isUpah ? 'Jumlah' : 'Jumlah (Qty)'}
-            </label>
-            <input
-              type="number"
-              className="input-field"
-              placeholder="0"
-              value={qty}
-              onChange={(e) => setQty(e.target.value)}
-            />
-          </div>
-
-          {/* Input Harga (Hanya muncul jika BUKAN Upah) */}
-          {!isUpah && (
-            <div className="input-group">
-              <label className="input-label">Total Harga</label>
-              <input
-                type="number"
-                className="input-field"
-                placeholder="Rp"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
-              {price && <span className="helper-text">{formatRupiah(price)}</span>}
-            </div>
-          )}
+        <div className="input-group">
+          <label htmlFor="jumlah" className="input-label">Jumlah (Rp)</label>
+          <input
+            id="jumlah"
+            name="jumlah"
+            type="number"
+            className="input-field"
+            placeholder="0"
+            required
+            value={jumlah}
+            onChange={(e) => setJumlah(e.target.value)}
+          />
+          {jumlah && <output className="helper-text">{formatRupiah(jumlah)}</output>}
         </div>
 
-      </div>
+        <div className="input-group">
+          <label htmlFor="keterangan" className="input-label">Keterangan (Opsional)</label>
+          <textarea
+            id="keterangan"
+            name="keterangan"
+            className="input-field"
+            placeholder="Catatan tambahan (boleh dikosongkan)"
+            rows={3}
+            value={keterangan}
+            onChange={(e) => setKeterangan(e.target.value)}
+            style={{ resize: 'none', fontFamily: 'inherit' }}
+          />
+        </div>
+      </section>
+
+      {/* Button cadangan jika user menekan 'Enter' pada keyboard di browser */}
+      <button type="submit" style={{ display: 'none' }}>Submit</button>
 
       {isLoading && (
         <div className="loading-overlay">
           <div className="spinner"></div>
         </div>
       )}
-    </div>
+    </form>
   );
 }

@@ -35,15 +35,16 @@ body {
   min-height: 100vh;
 }
 
-/* Container Utama */
+/* Container Utama - Diperbaiki agar responsif */
 .form-container {
-  width: 100%;
-  max-width: 420px;
+  width: 90%; /* Gunakan persentase agar mengikuti lebar layar */
+  max-width: 600px; /* Batasan maksimal agar tidak terlalu lebar di PC/Tablet */
   margin: 20px auto;
   padding: 24px;
   background: var(--card-bg);
   border-radius: 24px;
   box-shadow: var(--shadow-md);
+  box-sizing: border-box; /* Menjamin padding tidak merusak lebar */
 }
 
 .form-header {
@@ -51,13 +52,29 @@ body {
   text-align: center;
 }
 
+/* Judul Form - Diperbaiki agar icon tidak ikut gradient */
 .form-title {
   font-size: 24px;
   font-weight: 800;
   margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Class khusus untuk teks gradient biru */
+.title-gradient {
   background: linear-gradient(135deg, #0088cc 0%, #005f8f 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Class khusus icon agar warnanya normal */
+.title-icon {
+  font-size: 24px;
+  -webkit-text-fill-color: initial;
 }
 
 .form-subtitle {
@@ -92,7 +109,7 @@ body {
   background-color: var(--input-bg);
   color: var(--text-primary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-sizing: border-box; /* Penting agar padding tidak jebol */
+  box-sizing: border-box;
 }
 
 /* Efek saat diklik (Focus) */
@@ -102,32 +119,6 @@ body {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 4px var(--focus-ring);
   transform: translateY(-1px);
-}
-
-/* Grid untuk 2 kolom (Jumlah & Harga) */
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1.5fr; /* Kolom harga lebih lebar */
-  gap: 16px;
-}
-
-/* Custom Select Arrow */
-.select-wrapper {
-  position: relative;
-}
-.select-wrapper::after {
-  content: "▼";
-  font-size: 10px;
-  color: var(--text-secondary);
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-.select-field {
-  appearance: none; /* Hapus panah bawaan browser */
-  cursor: pointer;
 }
 
 /* Teks Helper (Preview Rupiah) */
@@ -161,3 +152,29 @@ body {
   animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Media Query untuk Layar Kecil (HP) */
+@media (max-width: 480px) {
+  .form-container {
+    width: 95%;
+    padding: 16px; /* Padding lebih kecil agar area isi lebih luas */
+    margin: 10px auto;
+  }
+
+  .form-title, .title-icon {
+    font-size: 20px;
+  }
+
+  .input-field {
+    padding: 14px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 400px) {
+  .form-container {
+    width: 95%;
+    padding: 16px;
+    margin: 10px auto;
+  }
+}
