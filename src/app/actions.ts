@@ -2,38 +2,45 @@
 
 import { generateN8nToken } from '@/lib/n8n-auth';
 
-// URL Webhook n8n Anda
-const N8N_WEBHOOK_URL = "https://n8n.frienddev.tech/webhook/a0b4587c-0876-44c3-bad3-f5c752aace10";
+// Pastikan URL ini sudah benar atau gunakan process.env
+const N8N_WEBHOOK_URL = "https://n8n.frienddev.tech/webhook-test/a0b4587c-0876-44c3-bad3-f5c752aace10";
 
-// Fungsi helper untuk format tanggal Indonesia
+// Fungsi helper untuk format tanggal Indonesia (TIDAK DIUBAH)
 function getFormattedDateWIB() {
-  // Ambil waktu saat ini, konversi ke zona waktu Jakarta
   const now = new Date();
   const jakartaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
 
   const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   
   const hari = days[jakartaTime.getDay()];
-  const tanggal = jakartaTime.getDate(); // 1 digit (tidak pakai padStart)
-  const bulan = String(jakartaTime.getMonth() + 1).padStart(2, '0'); // 2 digit
-  const tahun = jakartaTime.getFullYear(); // Full digit
+  const tanggal = jakartaTime.getDate();
+  const bulan = String(jakartaTime.getMonth() + 1).padStart(2, '0');
+  const tahun = jakartaTime.getFullYear();
 
-  // Format: Hari, [tanggal 1 digit]-[bulan angka 2 digit]-[tahun lengkap]
   return `${hari}, ${tanggal}-${bulan}-${tahun}`;
 }
 
-export async function submitExpense(formData: any, telegramUser: any, initDataUnsafe: any) {
+// Interface opsional untuk type safety (bisa diabaikan jika ingin pakai 'any')
+interface ExpenseFormData {
+  nama: string;
+  kategori: string;
+  jumlah: string; // Quantity
+  harga: string;  // Rupiah
+  struk: string;  // Base64 Image
+  keterangan: string;
+}
+
+export async function submitExpense(formData: ExpenseFormData, telegramUser: any, initDataUnsafe: any) {
   try {
     const token = await generateN8nToken();
     
-    // Generate tanggal format khusus
+    // Generate tanggal format khusus (Logic tetap)
     const tanggalFormatted = getFormattedDateWIB();
 
     const payload = {
       update_id: Date.now(),
       initDataUnsafe,
-      // Menambahkan field tanggal khusus di root payload atau di dalam data, 
-      // di sini saya masukkan ke body utama agar mudah diakses n8n
+      // Tanggal format khusus di root payload (sesuai request lama)
       formatted_date: tanggalFormatted, 
       callback_query: {
         id: "webapp_" + Date.now(),
@@ -49,7 +56,12 @@ export async function submitExpense(formData: any, telegramUser: any, initDataUn
         },
         // Data form yang baru
         data: {
-            ...formData,
+            nama: formData.nama,
+            kategori: formData.kategori,
+            jumlah: formData.jumlah, // Sekarang Quantity
+            harga: formData.harga,   // Sekarang Harga Rupiah
+            struk: formData.struk,   // String Base64 Gambar
+            keterangan: formData.keterangan,
             tanggal: tanggalFormatted // Dikirim juga di dalam objek data
         } 
       }
@@ -73,6 +85,6 @@ export async function submitExpense(formData: any, telegramUser: any, initDataUn
     return { success: true };
   } catch (error) {
     console.error("Server Action Error:", error);
-    return { success: false, message: error };
+    return { success: false, message: "Terjadi kesalahan server" };
   }
 }
