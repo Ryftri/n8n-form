@@ -22,7 +22,7 @@ export default function TelegramForm() {
     const file = e.target.files?.[0];
     if (file) {
       // Validasi ukuran file (maks 4MB)
-      if (file.size > 4 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) {
         WebApp.showPopup({
             title: 'File Terlalu Besar',
             message: 'Maksimal ukuran foto adalah 4MB',
